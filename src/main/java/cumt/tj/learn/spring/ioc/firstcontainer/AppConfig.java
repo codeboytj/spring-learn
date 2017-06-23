@@ -9,8 +9,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AppConfig {
     @Bean
-    public MyService myService() {
-        return new MyServiceImpl();
+    //myService依赖于myDao，通过方法参数传入
+    public MyService myService(MyDao myDao) {
+        return new MyServiceImpl(myDao);
     }
+
+    @Bean
+    //事先需要通过@Bean方法创造一个名为myDao的Bean
+    public MyDao myDao(){return new MyDaoImpl();}
 
 }

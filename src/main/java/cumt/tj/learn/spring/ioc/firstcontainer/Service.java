@@ -12,11 +12,13 @@ interface MyService{
 
 class MyServiceImpl implements MyService{
     int counter;
+    MyDao myDao;
 
     public MyServiceImpl() {
         counter++;
     }
 
+    public MyServiceImpl(MyDao myDao){this.myDao=myDao;}
     public void showCounter() {
         System.out.println(counter);
     }

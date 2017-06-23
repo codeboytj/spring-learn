@@ -58,3 +58,34 @@ ApplicationContext是一个注册了不同beans和他们之间关系的工厂，
 议使用，这样会造成程序对Spring APIs的依赖。
 Spring与其他如web框架进行整合的时候，为各种框架的组件（如controllers和JSF-managed beans）提供了依赖注入，允许通过元数据
 对特定的bean声明一个依赖（比如，使用autowiring注解）
+
+### 依赖注入(DI)
+
+在Java代码配置的IoC元配置中，要实现依赖注入，需要往[@Bean注解方法中传入参数](./firstcontainer/AppConfig.java)，需要在使用之前
+通过另一个@Bean方法定义注入的Bean，类似与xml的构造器方式的依赖注入。真正的依赖注入逻辑是在方法里面，是自己写的，可以用
+构造器、静态工厂方法以及setter等其他方式。
+```
+
+    @Bean
+    //myService依赖于myDao，通过方法参数传入
+    public MyService myService(MyDao myDao) {
+        return new MyServiceImpl(myDao);
+    }
+
+    @Bean
+    //事先需要通过@Bean方法创造一个名为myDao的Bean
+    public MyDao myDao(){return new MyDaoImpl();}
+    
+```
+#### 依赖注入过程
+
+1. spring创建的时候，会检查每个bean的配置。
+    1. 环形依赖(circular dependencies)，一个bean A创建的时候依赖于bean B，而bean B创建的时候依赖于bean A，这时候spring
+    IoC容器就会报BeanCurrentlyInCreationException错误。
+    2. 不存在的bean依赖，关于这个错误，如果使用的是Java代码的配置方法，在使用idea等IDE进行编译的时候就可以避免。
+2. 在创建Bean的时候，Spring会尽可能晚地解析依赖以及设置属性。这就意味着，容器会正常创建，但是当使用某个对象并出错的时候，会
+产生一个迟到的异常。
+3. 然而，单例scope的bean和被设置为"pre-instantiated"的bean会在容器创建的时候就创建。在创建容器的时候，这会花费一些时间和
+内存占用，但是让我们能够在容器启动的时候，发现配置错误，避免一些迟到的异常。其他的bean要在需要的时候才被创建。另外，bean的
+scope可以更改。
+4. 如果没有环形依赖，当多个bean合作创建一个dependent bean的时候，每个bean都会先于dependent bean创建。

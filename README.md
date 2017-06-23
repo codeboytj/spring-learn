@@ -19,3 +19,8 @@
 ## 2. 核心技术
 
 1. [控制反转(IoC)](./src/main/java/cumt/tj/learn/spring/ioc)
+
+## 3. [动手写spring](./src/main/java/cumt/tj/learn/tjspring)
+
+1. [注解](./src/main/java/cumt/tj/learn/tjspring/annotation)
+2. [ioc容器](./src/main/java/cumt/tj/learn/tjspring/context)
