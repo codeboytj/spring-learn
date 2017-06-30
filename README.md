@@ -5,6 +5,7 @@
 1. [代理模式](./src/main/java/cumt/tj/learn/designpattern/proxy)
     1. [静态代理](./src/main/java/cumt/tj/learn/designpattern/proxy/StaticProxy.java)
     2. [动态代理](./src/main/java/cumt/tj/learn/designpattern/proxy/DynamicProxy.java)
+    2. [Cglib代理](./src/main/java/cumt/tj/learn/designpattern/proxy/CglibProxy.java)
 2. [单例模式](./src/main/java/cumt/tj/learn/designpattern/singleton)
     1. [线程不安全的单例](./src/main/java/cumt/tj/learn/designpattern/singleton/SimpleSingleton.java)
     2. [急切、简单却安全的单例](./src/main/java/cumt/tj/learn/designpattern/singleton/EagerlySingleton.java)
