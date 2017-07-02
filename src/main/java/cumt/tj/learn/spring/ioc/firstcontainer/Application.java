@@ -16,8 +16,12 @@ public class Application {
         //当@Configuration作为输入的时候，@Configuration注解的类以及里面用@Bean注解的方法都会被定义成bean
         AppConfig myConfig = ctx.getBean(AppConfig.class);
 
-        MyService myService = ctx.getBean(MyService.class);
+        MyService myService = ctx.getBean("myService",MyService.class);
         myService.showCounter();
+
+        //查看自动装配结果
+        AutoWireServiceImpl autoWireService=ctx.getBean(AutoWireServiceImpl.class);
+        System.out.println("自动装配Dao是否成功："+autoWireService.ifDaoExist());
 
         System.out.println("容器中有"+ctx.getBeanDefinitionCount()+"个bean");
         for (String s:ctx.getBeanDefinitionNames()

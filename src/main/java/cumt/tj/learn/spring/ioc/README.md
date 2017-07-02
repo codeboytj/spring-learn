@@ -89,3 +89,165 @@ Spring与其他如web框架进行整合的时候，为各种框架的组件（�
 内存占用，但是让我们能够在容器启动的时候，发现配置错误，避免一些迟到的异常。其他的bean要在需要的时候才被创建。另外，bean的
 scope可以更改。
 4. 如果没有环形依赖，当多个bean合作创建一个dependent bean的时候，每个bean都会先于dependent bean创建。
+
+#### 1.4.2. @DependsOn
+
+通常，如果bean A依赖bean B，那么B很可能是A的一个field。这时候我们通过Java代码风格的元配置，使用
+构造器或setter方法设置依赖。但是，有些情况下，依赖并不是通过field来表达的，而是通过其它bean的初始化
+，例如数据库驱动的注册。这时候就要使用到@DependsOn注解了。
+
+@DependsOn注解可以用在使用@Component注解的类上面，也可以使用在@Bean注解的方法上面。当使用在类上面的时候，
+需要进行注解扫描，否则不会起作用，并且，如果类是通过xml的方式声明的，@DependsOn会被忽略，取而代之的是
+<bean>中的depends-on属性。
+
+#### 1.4.3. 懒惰初始化
+
+正如前面提到的那样，作为容器初始化的过程的一部分，容器会急切地创建和配置所有单例bean。当这种行为不需要的时候，
+可以通过使用@Lazy注解的方式，让相应bean的初始化过程延迟。@Lazy注解会告诉容器，当第一次使用该bean的时候再进行
+初始化，而不是在启动的时候。
+
+@Lazy注解表示bean需要被延迟初始化，可以用在使用@Component注解的类上面，也可以使用在@Bean注解的方法上面。如果使用了
+@Lazy并设为true，直到被另一个bean用到的时候或者被BeanFactory显式地检索的时候才被初始化。如果设为false，bean还是会在
+容器启动的时候初始化。
+
+如果@Lazy使用在@Configuration类上面，表示该类的所有@Bean方法都需要延迟初始化，除非方法上使用了@Lazy并设置为false。
+
+#### 1.4.4. 自动装配
+
+自动装配有如下的优势：
+
+1. 显著地减少指定属性或构造器参数的需要。
+2. 当对象改变的时候不用更新配置(大概就是这个意思)。这在开发的过程中非常有用。
+
+在基于Java代码的配置中，如果要使用自动装配，需要指定@Bean注解的autowire为Autowire.BY_NAME或Autowire.BY_TYPE：
+
+```
+@Bean(autowire = Autowire.BY_NAME)
+public AutoWireServiceImpl autoWireService(){
+    //使用自动装配的方式装配AutoWireServiceImpl中的MyDao，这样，就不用单独声明一个带有参数的构造函数了
+    return new AutoWireServiceImpl();
+}
+
+@Bean
+public MyDao autoWireDao(){
+    //当然，即使是自动装配，定义bean还是需要的
+    return new AutoWireDaoImpl();
+}
+```
+
+
+需要注意的是，自动装配是利用setter方法弄的，如果需要自动装配的那个属性没有setter方法，是不会装配成功的：
+
+```
+class AutoWireServiceImpl implements MyService{
+    int counter;
+    MyDao autoWireDao;
+
+    public void showCounter() {
+        System.out.println(counter);
+    }
+
+    //查看自动装配是否成功
+    public boolean ifDaoExist() {
+        return autoWireDao!=null;
+    }
+
+    //当使用自动装配的时候，需要声明一个setter方法，否则自动装配不会成功
+    public void setAutoWireDao(MyDao autoWireDao) {
+        this.autoWireDao = autoWireDao;
+    }
+}
+```
+
+自动装配的一些限制：
+
+1. 自动装配不能用于基本类型（及其数组）、String与Class。
+2. 不如通过代码显式装配那么精确。
+3. 装配信息可能不会被从Spring容器中生成文档的工具使用到。
+4. 容器中多个bean的定义可能会匹配到setter方法的参数type。这可能会造成一些困惑。
+
+#### 1.4.5. 方法注入
+
+在大多数情况下，容器中的大多数beans都是单例的，它们之间的依赖注入是很容易通过设置field实现的。当互相依赖的bean的scope不一致的时候，
+就会出现问题。例如，一个单例(single)bean A需要使用一个原型(prototype)bean B，容器只会创建A一次，会在这个时候创建B并设置
+到相应的属性，容器并不会在没有A需要使用B的时候都创建一次。这时，就要通过方法来获取依赖，而不是通过属性。
+
+##### 1.4.5.1. 一种解决方案
+
+让A实现ApplicationContextAware接口，这样A中就有了其所在容器的引用。当A需要使用B的时候，通过调用容器的getBean()方法获得B：
+
+```
+public class CommandManager implements ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    public Object process(Map commandState) {
+        // grab a new instance of the appropriate Command
+        Command command = createCommand();
+        // set the state on the (hopefully brand new) Command instance
+        command.setState(commandState);
+        return command.execute();
+    }
+
+    protected Command createCommand() {
+        // notice the Spring API dependency!
+        return this.applicationContext.getBean("command", Command.class);
+    }
+
+    public void setApplicationContext(
+            ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+}
+```
+
+这并不是一种理想的方式，因为业务代码与SpringIoC容器产生了耦合。
+
+##### 1.4.5.2. Lookup method inject
+
+通过Java风格的元配置，可以将A获取B的方法声明成抽象方法：
+
+```
+public abstract class CommandManager {
+   public Object process(Object commandState) {
+       // grab a new instance of the appropriate Command interface
+       Command command = createCommand();
+       // set the state on the (hopefully brand new) Command instance
+       command.setState(commandState);
+       return command.execute();
+   }
+
+   // okay... but where is the implementation of this method?
+   //获取B的方法
+   protected abstract Command createCommand();
+}
+   
+```
+
+然后，在配置B的时候，声明成原型：
+
+```
+@Bean
+@Scope("prototype")
+public AsyncCommand asyncCommand() {
+   AsyncCommand command = new AsyncCommand();
+   // inject dependencies here as required
+   return command;
+}
+```
+
+最后，在配置A的时候，实现抽象方法：
+
+```
+@Bean
+public CommandManager commandManager() {
+    // return new anonymous implementation of CommandManager with command() overridden
+    // to return a new prototype Command object
+    return new CommandManager() {
+        //实现抽象方法，每次调用方法都返回一个原型的bean
+        protected Command createCommand() {
+            return asyncCommand();
+        }
+    }
+}
+```

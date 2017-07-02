@@ -9,3 +9,5 @@ public class Dao {
 interface MyDao{}
 
 class MyDaoImpl implements MyDao{}
+
+class AutoWireDaoImpl implements MyDao{}
