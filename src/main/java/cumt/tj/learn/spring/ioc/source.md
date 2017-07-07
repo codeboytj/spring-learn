@@ -251,3 +251,5 @@ public CommandManager commandManager() {
     }
 }
 ```
+
+## [Bean scopes](./scpoe)
