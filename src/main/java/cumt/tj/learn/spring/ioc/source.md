@@ -252,4 +252,32 @@ public CommandManager commandManager() {
 }
 ```
 
-## [Bean scopes](./scpoe)
+## Bean scopes
+
+除了单例，spring中的bean还有[6种scope](./scope/)
+
+## 自定义bean的性质
+
+### 生命周期回调
+
+可以自定义bean的初始化以及销毁方法，来取代spring对bean的生命周期管理。有以下几种方法：
+
+1. 实现Spring的InitializingBean的afterPropertiesSet()方法进行初始化以及DisposableBean接口的destroy()方法进行销毁，这种方法
+与spring提供的接口产生耦合，是不推荐使用的。
+2. 在Java风格的配置中，使用@Bean注解的initMethod以及destroyMethod方法指定在bean中定义的方法作为初始化以及销毁方法，
+这种方法不错。
+3. 使用JSR-250的@PostConstruct以及@PreDestroy注解来完成，这种方法与spring解耦，这被认为是最好的方法。
+
+当这三种方法结合使用的时候，有执行顺序。
+
+初始化方法顺序：
+
+1. @PostConstruct
+2. InitializingBean接口的afterPropertiesSet()方法
+3. 指定的initMethod方法
+
+销毁方法执行顺序：
+
+1. @PreDestroy
+2. InitializingBean接口的destroy()方法
+3. 指定的destroy方法
