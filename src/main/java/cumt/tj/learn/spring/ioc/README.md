@@ -45,6 +45,8 @@ public class AppConfig {
 }
 ```
 
+这样容器中会实例化一个名为"myService"的bean（按照方法名命名的）。
+
 ### 1.2. 实例化容器
 
 org.springframework.context.ApplicationContext接口代表的就是SpringIoc容器。实例化容器，就是实例化ApplicationContext接口的一个实现类。

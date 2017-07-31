@@ -20,6 +20,7 @@
 ## 核心技术
 
 1. [控制反转(IoC)](./src/main/java/cumt/tj/learn/spring/ioc)
+2. [面向切面编程(AOP)](./src/main/java/cumt/tj/learn/spring/aop)
 
 ## [动手写spring](./src/main/java/cumt/tj/learn/tjspring)
 

@@ -12,6 +12,7 @@
     <orderEntry type="module" module-name="spring-learn_main" />
     <orderEntry type="library" name="Gradle: org.springframework:spring-core:4.3.9.RELEASE" level="project" />
     <orderEntry type="library" name="Gradle: org.springframework:spring-context:4.3.9.RELEASE" level="project" />
+    <orderEntry type="library" name="Gradle: org.aspectj:aspectjweaver:1.8.10" level="project" />
     <orderEntry type="library" name="Gradle: org.springframework:spring-test:4.3.9.RELEASE" level="project" />
     <orderEntry type="library" name="Gradle: junit:junit:4.11" level="project" />
     <orderEntry type="library" name="Gradle: commons-logging:commons-logging:1.2" level="project" />
