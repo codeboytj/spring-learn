@@ -49,6 +49,34 @@ public class NotVeryUsefulAspect {
 
 这样，名为"myAspect"的切面就在IoC容器中了。
 
-## AOP的重要概念与术语
+#### 声明切入点(Pointcut)
+
+声明一个切入点包含2个部分：
+
+1. 定义切入点签名，包含名称和参数
+2. 切入点表达式，定义具体匹配的方法执行
+
+```
+@Pointcut("execution(* transfer(..))")// the pointcut expression
+private void anyOldTransfer() {}// the pointcut signature
+```
+
+这样便定义了一个名为anyOldTransfer切入点，匹配任何名为transfer方法的切入点。
+
+##### 切入点指示符（Pointcut Designators、PCD）
+
+之前定义切入点表达式时，用到的execution就是一个切入点指示符，用来匹配执行方法的连接点。
+Spring中除了支持AspectJ中的部分PCD外，还支持一个自己的名为bean的PCD。Spring支持的PCD见附录。
+
+[SystemArchitecture](./SystemArchitecture.java)展示了一个经常运用在企业应用中的切入点定义以供参考。
+
+## 附录
+
+### AOP的重要概念与术语
 
 - Aspect，切面，将横切关注点设计为独立可重用的对象，这些对象称为切面。
+
+### Spring中支持的PCD
+
+- execution，用来匹配方法执行连接点，这是最常用的。
+- within，用来匹配指定类型中定义的那些方法的执行。
