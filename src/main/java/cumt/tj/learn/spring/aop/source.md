@@ -149,6 +149,42 @@ ProceedingJoinPoint类继承自org.aspectj.lang.JoinPoint接口，该接口暴�
 对于同一切面中，对同一连接点的多个相同的advice，执行顺序是无法确定的。这种情况下，可以考虑将这样的多个相同的advice
 合成一个，或者分离到多个aspect类中去。
 
+#### 引入（Introductions）
+
+通过引入，我们可以使得被advised的对象实现一个接口，从而拥有接口的方法，而不用修改advised对象的程序。
+
+This annotation is used to declare that matching types have a new parent (hence the name). For example, given an interface UsageTracked, and an implementation of that interface DefaultUsageTracked, the following aspect declares that all implementors of service interfaces also implement the UsageTracked interface. (In order to expose statistics via JMX for example.)
+
+引入通过@DeclareParents注解声明，通过value指定匹配的类型，通过defaultImpl指定接口的默认实现类，比如：
+
+```
+    @DeclareParents(value="com.xzy.myapp.service.*+", defaultImpl=DefaultUsageTracked.class)
+    public static UsageTracked mixin;
+```
+
+这样的代码，通过value属性，让匹配“com.xzy.myapp.service.*+"类名的类都实现了UsageTracked接口，
+而此时由于原本的类代码没有改变，所以原本的类中没有接口实现， 所以需要用defaultImpl指定一个默认
+的接口实现，这样，原本类中的产生接口实现方法就是DefaultUsageTracked类中实现的方法。
+
+然后，对于advised对象，由于使它实现了UsageTracked接口，所以可以这样用：
+
+```
+    UsageTracked usageTracked = (UsageTracked) context.getBean("myService");
+```
+
+但是，其实现在的advised对象可以直接被用成UsageTracked对象：
+
+```aidl
+    @Before("SystemArchitecture.businessService() && this(usageTracked)")
+    public void recordUsage(UsageTracked usageTracked) {
+        usageTracked.incrementUseCount();
+    }
+```
+
+这样，可以直接在增强中调用新添加的方法。
+其中，@Before所声明的advice，作用的是SystemArchitecture.businessService()切入点，匹配的连接点正是
+"com.xzy.myapp.service.*+"中的所有方法。
+
 ## 附录
 
 ### AOP的重要概念与术语
