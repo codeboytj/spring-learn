@@ -189,7 +189,14 @@ This annotation is used to declare that matching types have a new parent (hence 
 
 ### AOP的重要概念与术语
 
-- Aspect，切面，将横切关注点设计为独立可重用的对象，这些对象称为切面。
+- Aspect，切面。将横切关注点设计为独立可重用的对象，这些对象称为切面。Spring AOP中, aspects可以用使用@Aspect注解的普通的
+类实现;
+- Join point，连接点。程序运行中的一个点，比如方法的运行或者异常的处理。Spring AOP中, join point总是代表一个方法的运行。
+- Advice，通知。在一个特定的连接点上，切面对应的行为。有"around," "before" and "after" advice。
+Many AOP frameworks, including Spring, 把advice当作拦截器（interceptor）, 在一个连接点周围布置一个拦截器链。
+- Pointcut，切入点。定义切点用来匹配连接点（连接点是一个概念，不能用代码来定义）。Advice与一个pointcut expression联合使用，在任何匹配该切点的
+连接点运行(for example, 切点利用切点表达式匹配特点的方法运行（连接点），通知表示这个连接点的"Before"、"After"以及"around"
+需要做的工作）。
 
 ### Spring中支持的PCD
 
