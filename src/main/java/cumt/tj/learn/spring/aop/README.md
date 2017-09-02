@@ -185,9 +185,76 @@ This annotation is used to declare that matching types have a new parent (hence 
 其中，@Before所声明的advice，作用的是SystemArchitecture.businessService()切入点，匹配的连接点正是
 "com.xzy.myapp.service.*+"中的所有方法。
 
-## 2. 附录
+## 2. 代理机制
 
-### 2.1. AOP的重要概念与术语
+在有接口的情况下，Spring AOP默认使用JDK的动态代理模式，否则使用cglib代理模式。当然也可以通过配置，强制Spring AOP使用
+cglib代理模式。需要注意的是：
+
+1. final方法不能被重写，所以不能被advised。
+2. 从spring3.2开始，cglib代理就被打包放到了spring-core jar文件中。不用单独添加依赖。
+3. 从spring4.0开始，由于cglib代理会由Objenesis创建，被代理对象的构造方法不再会被调用2次。只有当JVM不允许构造器绕过的时候
+，才会执行2次。
+
+参考[代理模式](../../designpattern/proxy)。要注意的是：一旦代理开始使用目标对象的引用进行方法调用，目标对象中的任何方法
+调用都是目标对象自己的引用完成的，而不是代理的引用such as this.bar() or this.foo()。也就是说目标对象方法中的相互调用并
+不会被aop定义的advice增强。比如：
+
+```
+public class SimplePojo implements Pojo {
+
+    public void foo() {
+        // this next method invocation is a direct call on the 'this' reference
+        this.bar();
+    }
+
+    public void bar() {
+        // some logic...
+    }
+}
+```
+
+foo()方法中调用的this.bar()就不会被触发bar方法的advice的调用。所以，最好避免这样的需要advised的方法相互调用。当然也可以
+通过一些方法触发advice的调用，比如：
+
+```
+public class SimplePojo implements Pojo {
+
+    public void foo() {
+        // this works, but... gah!
+        ((Pojo) AopContext.currentProxy()).bar();
+    }
+
+    public void bar() {
+        // some logic...
+    }
+}
+```
+
+这样的话，就与spring aop产生了耦合。而且，还需要在客户端调用的时候，添加额外的配置：
+
+```
+public class Main {
+
+    public static void main(String[] args) {
+
+        ProxyFactory factory = new ProxyFactory(new SimplePojo());
+        factory.adddInterface(Pojo.class);
+        factory.addAdvice(new RetryAdvice());
+        
+        //额外添加的配置
+        factory.setExposeProxy(true);
+
+        Pojo pojo = (Pojo) factory.getProxy();
+
+        // this is a method call on the proxy!
+        pojo.foo();
+    }
+}
+```
+
+## 3. 附录
+
+### 3.1. AOP的重要概念与术语
 
 - Aspect，切面。将横切关注点设计为独立可重用的对象，这些对象称为切面。Spring AOP中, aspects可以用使用@Aspect注解的普通的
 类实现;
@@ -201,16 +268,16 @@ Many AOP frameworks, including Spring, 把advice当作拦截器（interceptor）
 一个实现类)。
 - Target object，目标对象。被切面advised的对象，也叫advised object。由于Spring AOP是利用运行时代理实现的, 所以这个对象也是
 被代理的对象。
-- AOP proxy，由Aop动态生成的，代理模式里的代理角色。
+- AOP proxy，由Aop动态生成的，代理模式里的代理角色。在有接口的情况下，默认使用JDK的动态代理，否则使用cglib代理模式。
 - Weaving，织入。把切面应用到目标对象并创建代理的过程。可以在compile time完成，可以在load time(类加载时期)完成, or at runtime完成。
 Spring AOP在runtime完成织入。
 
-### 2.2. Spring中支持的PCD
+### 3.2. Spring中支持的PCD
 
 - execution，用来匹配方法执行连接点，这是最常用的。
 - within，用来匹配指定类型中定义的那些方法的执行。
 
-### 2.3. 通知（Advice）种类
+### 3.3. 通知（Advice）种类
 
 - Before advice: Advice that executes before a join point, but which does not have the ability to prevent execution flow proceeding to the join point (unless it throws an exception).
 - After returning advice: Advice to be executed after a join point completes normally: for example, if a method returns without throwing an exception.
