@@ -110,7 +110,7 @@ public class BeforeExample {
 
 可以为声明的通知方法传递参数，这样可以到达与连接点联系起来的效果，如：
 
-```aidl
+```
 @Aspect
 public class AroundExample {
 
@@ -174,7 +174,7 @@ This annotation is used to declare that matching types have a new parent (hence 
 
 但是，其实现在的advised对象可以直接被用成UsageTracked对象：
 
-```aidl
+```
     @Before("SystemArchitecture.businessService() && this(usageTracked)")
     public void recordUsage(UsageTracked usageTracked) {
         usageTracked.incrementUseCount();
@@ -197,6 +197,13 @@ Many AOP frameworks, including Spring, 把advice当作拦截器（interceptor）
 - Pointcut，切入点。定义切点用来匹配连接点（连接点是一个概念，不能用代码来定义）。Advice与一个pointcut expression联合使用，在任何匹配该切点的
 连接点运行(for example, 切点利用切点表达式匹配特点的方法运行（连接点），通知表示这个连接点的"Before"、"After"以及"around"
 需要做的工作）。
+- Introduction，引入。为现有类添加新的方法和属性，而不改变现有类的结构和代码等。Spring AOP允许为被通知类引入new interfaces (以及它的
+一个实现类)。
+- Target object，目标对象。被切面advised的对象，也叫advised object。由于Spring AOP是利用运行时代理实现的, 所以这个对象也是
+被代理的对象。
+- AOP proxy，由Aop动态生成的，代理模式里的代理角色。
+- Weaving，织入。把切面应用到目标对象并创建代理的过程。可以在compile time完成，可以在load time(类加载时期)完成, or at runtime完成。
+Spring AOP在runtime完成织入。
 
 ### Spring中支持的PCD
 
