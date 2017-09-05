@@ -16,7 +16,8 @@ dependencies {
     compile("org.springframework:spring-context:4.3.9.RELEASE")
     //@AspectJ风格注解的支持
     compile group: 'org.aspectj', name: 'aspectjweaver', version: '1.8.10'
-
+    //事务管理支持
+    compile("org.springframework:spring-tx:4.3.9.RELEASE")
 
     testCompile("org.springframework:spring-test:4.3.9.RELEASE")
     testCompile group: 'junit', name: 'junit', version: '4.11'
