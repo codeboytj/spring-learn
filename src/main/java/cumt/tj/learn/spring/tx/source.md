@@ -168,3 +168,26 @@ the HibernateTransactionManager需要SessionFactory的引用。
 ```
 
 在这些例子中，应用程序的代码都不需要更改，仅仅通过更改配置来更改事务管理的方式。
+
+## 声明式事务
+
+spring的事务管理可以通过spring的aop来实现，但是事务切面的代码通常随着spring发布并且作为样板使用，所以在使用事务的时候，
+理解aop的概念并不是必须的。
+
+Spring的declarative transaction management与EJB CMT很像，可以将事务的行为指定在方法级别。在必要的时候可以在事务中
+通过调用setRollbackOnly()进行回滚。两种事务管理的不同之处在于：
+
+- EJB CMT捆绑JTA, Spring的declarative transaction management可以在任何环境中使用。可以与JTA transactions 或者
+ local transactions using JDBC, JPA, Hibernate or JDO一起使用，只需要简单更改配置文件。
+- 可以将Spring的declarative transaction management应用到任何类,不仅仅特定的类。
+- 使用Spring可以声明回滚规则,这是EJB中没有的特性。programmatic and declarative都支持这个。
+- Spring让你能通过AOP自定义事务行为。比如，可以在事务回滚的时候插入自定义行为。
+- Spring不支持远程调用事务的传播性。EJB支持这个。然而，用这个需谨慎。
+
+回滚规则是很重要的：它们让你指定能导致自动回滚的异常。回滚规则在配置文件中声明，而不是在Java代码中。所以，尽管能通过调用
+TransactionStatus的setRollbackOnly()方法回滚当前事务, 大部分时间通过指定回滚规则来配置。这样，让业务代码与事务管理解耦。
+比如，它们通常不需要在java代码中import spring的api。
+
+尽管EJB容器在遇到a system exception (usually a runtime exception)的时候自动回滚, EJB CMT 在遇到application exception 
+(that is, a checked exception other than java.rmi.RemoteException)的时候并不会自动回滚。虽然spring声明式事务的默认行为和
+EJB一样（遇到RuntimeException的时候回滚），但是通常自定义行为是很有用的。
