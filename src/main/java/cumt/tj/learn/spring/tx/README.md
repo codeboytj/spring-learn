@@ -191,3 +191,148 @@ TransactionStatus的setRollbackOnly()方法回滚当前事务, 大部分时间�
 尽管EJB容器在遇到a system exception (usually a runtime exception)的时候自动回滚, EJB CMT 在遇到application exception 
 (that is, a checked exception other than java.rmi.RemoteException)的时候并不会自动回滚。虽然spring声明式事务的默认行为和
 EJB一样（遇到RuntimeException的时候回滚），但是通常自定义行为是很有用的。
+
+### 4.1. 理解Spring’s声明式事务实现
+
+这一节讨论一下在解决事务相关问题时，Spring’s declarative transaction的内部工作。
+
+关于Spring框架的声明式事务支持的最重要的概念是通过AOP代理启用此支持，事务advice由元数据（目前以XML或基于注解为基础）驱动。
+AOP与事务元数据的组合产生了一个AOP代理，它使用TransactionInterceptor与适当的PlatformTransactionManager实现结合来驱动方法
+调用的事务。
+
+通常，在一个事务代理上调用方法时，各个类的工作会像这样：
+
+![事务代理的工作流程](../../../../../../resources/img/tx.png)
+
+### 4.2. 声明式事务示例
+
+```
+public interface FooService {
+
+    Foo getFoo(String fooName);
+
+    Foo getFoo(String fooName, String barName);
+
+    void insertFoo(Foo foo);
+
+    void updateFoo(Foo foo);
+
+}
+```
+```
+public class DefaultFooService implements FooService{
+
+    public Foo getFoo(String fooName) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Foo getFoo(String fooName, String barName) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void insertFoo(Foo foo) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void updateFoo(Foo foo) {
+        throw new UnsupportedOperationException();
+    }
+
+}
+```
+
+在示例中，让DefaultFooService抛出UnsupportedOperationException，是一种RuntimeException，这样能够看到事务的创建以及回滚。
+getFoo(String) and getFoo(String, String)必须运行在read-only语义中，而insertFoo(Foo) and updateFoo(Foo)运行在read-write语义中。
+接下来配置bean、切入点、advice、dataSource、日志等：
+
+```
+<!-- from the file 'context.xml' -->
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!-- this is the service object that we want to make transactional -->
+    <bean id="fooService" class="cumt.tj.learn.spring.tx.DefaultFooService"/>
+
+    <!-- the transactional advice (what 'happens'; see the <aop:advisor/> bean below) -->
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <!-- the transactional semantics... -->
+        <tx:attributes>
+            <!-- all methods starting with 'get' are read-only -->
+            <tx:method name="get*" read-only="true"/>
+            <!-- other methods use the default transaction settings (see below) -->
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- ensure that the above transactional advice runs for any execution
+        of an operation defined by the FooService interface -->
+    <aop:config>
+        <aop:pointcut id="fooServiceOperation" expression="execution(* cumt.tj.learn.spring.tx.FooService.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="fooServiceOperation"/>
+    </aop:config>
+
+    <!-- don't forget the DataSource -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/tx?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"/>
+        <property name="username" value="root"/>
+        <property name="password" value="12345678"/>
+    </bean>
+
+    <!-- similarly, don't forget the PlatformTransactionManager -->
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- other <bean/> definitions here -->
+
+</beans>
+```
+
+使用Log4J，需要进行配置
+```
+log4j.rootCategory=INFO, stdout
+
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %5p %t %c{2}:%L - %m%n
+
+log4j.logger.org.springframework.beans.factory=DEBUG
+
+//记录DataSourceTransactionManager产生的日志，才可以看到事务的日志
+log4j.logger.org.springframework.jdbc.datasource.DataSourceTransactionManager=DEBUG
+```
+
+然后运行主程序：
+```
+public final class Application {
+
+    public static void main(final String[] args) throws Exception {
+        ApplicationContext ctx = new ClassPathXmlApplicationContext("/tx/context.xml", Application.class);
+       FooService fooService = (FooService) ctx.getBean("fooService");
+        fooService.insertFoo (new Foo());
+    }
+
+}
+```
+
+得到事务日志：
+```
+16:49:43,566 DEBUG main datasource.DataSourceTransactionManager:367 - Creating new transaction with name [cumt.tj.learn.spring.tx.DefaultFooService.insertFoo]: PROPAGATION_REQUIRED,ISOLATION_DEFAULT
+16:49:43,917 DEBUG main datasource.DataSourceTransactionManager:248 - Acquired Connection [jdbc:mysql://localhost:3306/tx?useUnicode=true&characterEncoding=UTF-8&useSSL=false, UserName=root@localhost, MySQL Connector Java] for JDBC transaction
+16:49:43,923 DEBUG main datasource.DataSourceTransactionManager:265 - Switching JDBC Connection [jdbc:mysql://localhost:3306/tx?useUnicode=true&characterEncoding=UTF-8&useSSL=false, UserName=root@localhost, MySQL Connector Java] to manual commit
+16:49:43,925 DEBUG main datasource.DataSourceTransactionManager:851 - Initiating transaction rollback
+16:49:43,926 DEBUG main datasource.DataSourceTransactionManager:325 - Rolling back JDBC transaction on Connection [jdbc:mysql://localhost:3306/tx?useUnicode=true&characterEncoding=UTF-8&useSSL=false, UserName=root@localhost, MySQL Connector Java]
+16:49:43,928 DEBUG main datasource.DataSourceTransactionManager:368 - Releasing JDBC Connection [jdbc:mysql://localhost:3306/tx?useUnicode=true&characterEncoding=UTF-8&useSSL=false, UserName=root@localhost, MySQL Connector Java] after transaction
+```
+可以看到产生的回滚。
