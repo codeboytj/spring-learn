@@ -16,6 +16,7 @@
     2. [简单工厂方法](./src/main/java/cumt/tj/learn/designpattern/factory/SimpleFactory.java)
     3. [工厂模式](./src/main/java/cumt/tj/learn/designpattern/factory/Factory.java)
     4. [抽象工厂模式](./src/main/java/cumt/tj/learn/designpattern/factory/AbstractFactory.java)
+4. [装饰者模式](./src/main/java/cumt/tj/learn/designpattern/decorator)
     
 ## 2. 核心技术
 
